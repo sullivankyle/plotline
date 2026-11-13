@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Plotline Landscape Designer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 18c4-1 6-6 10-6s6 4 10 3"/><path d="M2 12c3-1 5-6 9-6s6 3 11 2"/><path d="M5 22c3-.5 5-2 8-2s5 1 8 .5"/></svg>Plotline</div>
+  <input class="pname" id="pname" type="text" maxlength="80" aria-label="Project name" placeholder="Project name">
+  <span class="savestate" id="saveState" role="status"></span>
+  <span class="spacer"></span>
+  <button class="btn" id="undoBtn" aria-label="Undo" title="Undo (Ctrl+Z)">&#8630;<span class="lbl-d">Undo</span></button>
+  <button class="btn" id="redoBtn" aria-label="Redo" title="Redo (Ctrl+Shift+Z)">&#8631;<span class="lbl-d">Redo</span></button>
+  <div class="menu-wrap">
+    <button class="btn" id="projBtn" aria-haspopup="true" aria-expanded="false">Projects &#9662;</button>
+    <div class="menu glass" id="projMenu" hidden></div>
+  </div>
+  <button class="btn primary" id="propBtn">Proposal</button>
+</header>
+
+<div class="app" id="app">
+  <aside class="panel left" id="leftPanel" aria-label="Library">
+    <div class="panel-head"><h2>Library</h2><button class="btn sm" id="toolSelect" aria-pressed="true">Select / move</button></div>
+    <div class="cats" id="cats" role="group" aria-label="Library categories"></div>
+    <div class="panel-body">
+      <div id="lib"></div>
+      <h3 class="sect">Lot</h3>
+      <div class="row2">
+        <div class="field"><label for="lotW">Width (ft)</label><input id="lotW" type="number" min="10" max="400" step="1"></div>
+        <div class="field"><label for="lotD">Depth (ft)</label><input id="lotD" type="number" min="10" max="400" step="1"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="snapSel">Snap to</label><select id="snapSel"><option value="0">Off</option><option value="0.5">0.5 ft</option><option value="1">1 ft</option><option value="2">2 ft</option></select></div>
+        <div class="field"><label for="latIn">Latitude (&deg;N)</label><input id="latIn" type="number" min="0" max="70" step="0.5"></div>
+      </div>
+      <p class="help">North is up in plan view. The lot is measured from its north-west corner. Latitude sets the sun path for shadows.</p>
+    </div>
+  </aside>
+
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="3D landscape design canvas" tabindex="0"></canvas>
+    <canvas id="cv2" hidden aria-label="2D rendered plan"></canvas>
+    <div class="ov ov-top">
+      <div class="ov-row">
+        <div class="ov-grp">
+          <div class="seg" id="viewSeg" role="group" aria-label="View"><button data-view="persp" aria-pressed="true">3D</button><button data-view="plan" aria-pressed="false">Plan</button><button data-view="render" aria-pressed="false">2D render</button></div>
+          <div class="menu-wrap" id="lookWrap">
+            <button class="chip" id="lookBtn" aria-haspopup="true" aria-expanded="false">Look: <b id="lookTxt">Standard</b> &#9662;</button>
+            <div class="menu glass lookmenu" id="lookMenu" hidden></div>
+          </div>
+        </div>
+        <div class="ov-grp ov-grp-r">
+          <div class="ov-grp" id="chips3d">
+            <button class="chip" id="tgGrid" aria-pressed="true">Grid</button>
+            <button class="chip" id="tgLabels" aria-pressed="false">Labels</button>
+            <button class="chip" id="tgShadow" aria-pressed="true">Shadows</button>
+          </div>
+          <div class="ov-grp" id="chips2d" hidden>
+            <div class="seg" id="r2Style" role="group" aria-label="Drawing style"><button data-s="ill" aria-pressed="true">Illustrated</button><button data-s="line" aria-pressed="false">Line</button></div>
+            <button class="chip" id="r2Labels" aria-pressed="true">Labels</button>
+            <button class="chip" id="r2Shadows" aria-pressed="true">Shadows</button>
+            <button class="chip" id="r2Legend" aria-pressed="true">Key</button>
+            <button class="chip" id="r2Dims" aria-pressed="true">Dimensions</button>
+            <button class="chip" id="r2Out" aria-label="Zoom out">&minus;</button>
+            <button class="chip" id="r2In" aria-label="Zoom in">+</button>
+            <button class="chip" id="r2Fit">Fit</button>
+            <button class="chip" id="r2Save">Save image</button>
+          </div>
+        </div>
+      </div>
+      <div class="ctxbar glass" id="ctxbar" hidden></div>
+    </div>
+    <div class="ov ov-bl glass" id="status"></div>
+    <div class="ov ov-br">
+      <div class="scale" id="scale" hidden><i id="scaleLine"></i><span id="scaleTxt"></span></div>
+      <div class="compass glass" aria-label="North indicator"><svg id="compass" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M15 3l5 14-5-3-5 3z" fill="currentColor"/><text x="15" y="28" text-anchor="middle" font-size="8" font-family="IBM Plex Mono, monospace" fill="currentColor" stroke="none">N</text></svg></div>
+    </div>
+    <div class="ov sunbar glass">
+      <select id="sunMonth" aria-label="Month for sun position"><option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option><option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option><option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option></select>
+      <input id="sunHour" type="range" min="5" max="21" step="0.25" aria-label="Time of day">
+      <span class="tm" id="sunTxt"></span>
+    </div>
+  </div>
+
+  <nav class="mtabs" id="mtabs" aria-label="Panels">
+    <button class="btn sm" data-p="library">Library</button>
+    <button class="btn sm" data-p="inspect">Selected</button>
+    <button class="btn sm" data-p="estimate">Estimate</button>
+    <button class="btn sm" data-p="prices">Prices</button>
+  </nav>
+
+  <aside class="panel right" id="rightPanel" aria-label="Details">
+    <div class="tabs" id="rtabs" role="tablist">
+      <button role="tab" data-tab="inspect" aria-selected="true">Selected</button>
+      <button role="tab" data-tab="estimate" aria-selected="false">Estimate</button>
+      <button role="tab" data-tab="prices" aria-selected="false">Prices</button>
+    </div>
+    <div class="panel-body" id="tabInspect"></div>
+    <div class="panel-body" id="tabEstimate" hidden>
+      <div class="row2">
+        <div class="field"><label for="inMarkup">Markup %</label><input id="inMarkup" type="number" min="0" max="300" step="0.5"></div>
+        <div class="field"><label for="inTax">Sales tax %</label><input id="inTax" type="number" min="0" max="30" step="0.01"></div>
+      </div>
+      <div id="estRows"></div>
+      <h3 class="sect">Added items</h3>
+      <div id="customList"></div>
+      <button class="btn sm" id="addCustom">+ Add item</button>
+      <div id="estTotals"></div>
+      <p class="help" style="margin-top:12px">Prices in the Prices tab are your installed cost. Markup turns them into the price the client sees. Added items are client prices and skip markup.</p>
+    </div>
+    <div class="panel-body" id="tabPrices" hidden></div>
+  </aside>
+</div>
+
+<div class="overlay" id="propOverlay" hidden role="dialog" aria-modal="true" aria-label="Proposal">
+  <div class="ov-bar">
+    <h2>Proposal</h2><span class="spacer"></span>
+    <button class="btn" id="btnSaveHtml">Save proposal (.html)</button>
+    <button class="btn" id="btnSaveCsv">Save items (.csv)</button>
+    <button class="btn primary" id="btnPropClose">Back to design</button>
+  </div>
+  <div class="ov-main">
+    <form class="ov-form panel" id="propForm">
+      <div class="row2">
+        <div class="field"><label for="pf-planstyle">Plan image</label><select id="pf-planstyle"><option value="ill">Illustrated</option><option value="line">Line drawing</option></select></div>
+        <div class="field"><label for="pf-look">3D image look</label><select id="pf-look"><option value="-1">Current</option><option value="0">Sketch</option><option value="1">Standard</option><option value="2">Realistic</option></select></div>
+      </div>
+      <div class="field"><label for="pf-company">Your company</label><input id="pf-company" type="text" maxlength="120" data-m="company"></div>
+      <div class="field"><label for="pf-contact">Phone / email</label><input id="pf-contact" type="text" maxlength="120" data-m="contact"></div>
+      <div class="field"><label for="pf-client">Client</label><input id="pf-client" type="text" maxlength="120" data-m="client"></div>
+      <div class="field"><label for="pf-address">Site address</label><input id="pf-address" type="text" maxlength="120" data-m="address"></div>
+      <div class="row2">
+        <div class="field"><label for="pf-date">Date</label><input id="pf-date" type="date" data-m="date"></div>
+        <div class="field"><label for="pf-valid">Valid (days)</label><input id="pf-valid" type="number" min="1" max="365" data-m="valid"></div>
+      </div>
+      <div class="field"><label for="pf-scope">Scope of work</label><textarea id="pf-scope" rows="5" maxlength="2000" data-m="scope" placeholder="Leave blank to use a summary written from the design."></textarea>
+        <button type="button" class="btn sm" id="btnFillScope">Write from design</button></div>
+      <div class="field"><label for="pf-terms">Terms</label><textarea id="pf-terms" rows="6" maxlength="2000" data-m="terms"></textarea></div>
+    </form>
+    <div class="ov-preview" id="propPreview"></div>
+  </div>
+</div>
+
+<input type="file" id="importFile" accept=".json,application/json" hidden>
+<div class="toast" id="toast" role="status" hidden></div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
